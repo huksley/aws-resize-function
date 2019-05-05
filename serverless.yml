@@ -1,0 +1,61 @@
+service: aws-resize
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  region: eu-west-1
+  stage: dev
+  # optional, in MB, default is 1024, min is 128
+  memorySize: 128
+  # optional, in seconds, default is 6
+  timeout: 3
+  # optional, default is true
+  versionFunctions: false
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "s3:*"
+      Resource:
+        Fn::Join:
+          - ""
+          - - "arn:aws:s3:::"
+            - ${env:IMAGE_BUCKET, 'sample-bucket'}
+    - Effect: "Allow"
+      Action:
+        - "s3:*"
+      Resource:
+        Fn::Join:
+          - ""
+          - - "arn:aws:s3:::"
+            - ${env:IMAGE_BUCKET, 'sample-bucket'}
+            - "/*"
+    - Effect: "Allow"
+      Action: "rekognition:DetectFaces"
+      Resource: "*"
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-plugin-existing-s3
+
+package:
+  exclude:
+    - "node_modules/aws-sdk/**"
+    - "node_modules/aws-lambda/**"
+
+functions:
+  findFacePost:
+    handler: src/find-face.postHandler
+    events:
+      - http:
+          path: api
+          method: post
+          cors: true
+  findFaceS3:
+    handler: src/find-face.s3EventHandler
+    events:
+      - existingS3:
+          bucket: ${env:IMAGE_BUCKET, 'sample-bucket'}
+          events:
+            - s3:ObjectCreated:*
+          rules:
+            - suffix: .jpg

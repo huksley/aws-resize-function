@@ -8,7 +8,7 @@ provider:
   # optional, in MB, default is 1024, min is 128
   memorySize: 128
   # optional, in seconds, default is 6
-  timeout: 3
+  timeout: 30
   # optional, default is true
   versionFunctions: false
   iamRoleStatements:
@@ -29,9 +29,6 @@ provider:
           - - "arn:aws:s3:::"
             - ${env:IMAGE_BUCKET, 'sample-bucket'}
             - "/*"
-    - Effect: "Allow"
-      Action: "rekognition:DetectFaces"
-      Resource: "*"
 
 plugins:
   - serverless-plugin-typescript
@@ -43,19 +40,21 @@ package:
     - "node_modules/aws-lambda/**"
 
 functions:
-  findFacePost:
-    handler: src/find-face.postHandler
+  resizePost:
+    handler: src/resize.postHandler
     events:
       - http:
-          path: api
+          enabled: true
+          path: api/resize
           method: post
           cors: true
-  findFaceS3:
-    handler: src/find-face.s3EventHandler
-    events:
-      - existingS3:
-          bucket: ${env:IMAGE_BUCKET, 'sample-bucket'}
-          events:
-            - s3:ObjectCreated:*
-          rules:
-            - suffix: .jpg
+  # resizeS3:
+  #   handler: src/resize.s3EventHandler
+  #   events:
+  #     - existingS3:
+  #         enabled: false
+  #         bucket: ${env:IMAGE_BUCKET, 'sample-bucket'}
+  #         events:
+  #           - s3:ObjectCreated:*
+  #         rules:
+  #           - suffix: .jpg

@@ -51,7 +51,7 @@ export const decode = <T>(
   type: t.TypeC<any> | t.IntersectionC<any> | t.PartialC<any>,
   json: string | undefined | null | any,
 ) => {
-  assert.ok(json)
+  assert.ok(json, 'Incoming JSON is either a string or an object: ' + json)
   const res = type.decode(typeof json === 'string' ? JSON.parse(json!) : json)
   const value = res.getOrElseL(_ => {
     throw new Error('Invalid value ' + JSON.stringify(PathReporter.report(res)))

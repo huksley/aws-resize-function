@@ -1,6 +1,6 @@
 import * as assert from 'assert'
 import { Input, InputPayload, resize } from './resize'
-import { decode, noext, ext } from './util'
+import { decode } from './util'
 import { config } from './config'
 import { logger as log } from './logger'
 
@@ -41,10 +41,6 @@ describe('check types', () => {
     const url = config.E2E_IMAGE_URL
     const res = resize({
       s3Url: url,
-      dstS3Url: noext(url) + '-thumbnail' + '.' + ext(url),
-      width: 600,
-      height: 600,
-      format: 'png',
     })
     return res.then(result => log.info('result', result))
   })

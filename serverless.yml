@@ -32,7 +32,6 @@ provider:
 
 plugins:
   - serverless-plugin-typescript
-  - serverless-plugin-existing-s3
 
 package:
   exclude:
@@ -40,7 +39,7 @@ package:
     - "node_modules/aws-lambda/**"
 
 functions:
-  resizePost:
+  handlePost:
     handler: src/resize.postHandler
     events:
       - http:
@@ -48,13 +47,3 @@ functions:
           path: api/resize
           method: post
           cors: true
-  # resizeS3:
-  #   handler: src/resize.s3EventHandler
-  #   events:
-  #     - existingS3:
-  #         enabled: false
-  #         bucket: ${env:IMAGE_BUCKET, 'sample-bucket'}
-  #         events:
-  #           - s3:ObjectCreated:*
-  #         rules:
-  #           - suffix: .jpg

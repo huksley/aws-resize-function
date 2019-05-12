@@ -1,8 +1,8 @@
 {
-  "name": "typescript-template",
+  "name": "aws-resize",
   "description": "My project",
   "version": "0.1.0",
-  "main": "src/find-face.ts",
+  "main": "src/resize.ts",
   "license": "MIT",
   "engines": {
     "node": ">=8.9.0 <11.0.0",
@@ -47,8 +47,9 @@
     "build": "tsc -p .",
     "format": "prettier \"src/**/*.{js,ts,tsx}\" --write",
     "lint": "ts-node node_modules/.bin/tslint -p . -t verbose",
-    "test": "mocha -r ts-node/register --extension ts \"src/**/*.spec.ts\"",
-    "deploy": "serverless deploy && serverless s3deploy"
+    "test": "chamber exec find-face/test1 -- mocha -r ts-node/register --extension ts \"src/**/*.spec.ts\"",
+    "deploy": "chamber exec find-face/test1 -- serverless deploy",
+    "serverless": "chamber exec find-face/test1 -- serverless"
   },
   "prettier": {
     "semi": false,

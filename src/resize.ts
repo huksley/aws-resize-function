@@ -1,17 +1,19 @@
 import { S3 } from 'aws-sdk'
 import * as t from 'io-ts'
-const s3 = new S3({
-  signatureVersion: 'v4',
-})
 import * as Sharp from 'sharp'
-import { decode, urlToBucketName, urlToKeyName, toThrow, noext, ext } from './util'
 import {
-  Context as LambdaContext,
-  APIGatewayEvent,
-  Callback as LambdaCallback,
-  S3Event,
-} from 'aws-lambda'
+  decode,
+  urlToBucketName,
+  urlToKeyName,
+  toThrow,
+  noext,
+  ext,
+  findPayload,
+  apiResponse,
+} from './util'
+import { Context as LambdaContext, APIGatewayEvent, Callback as LambdaCallback } from 'aws-lambda'
 import { logger as log, logger } from './logger'
+import { config } from './config'
 
 const DEFAULT_FORMAT = 'png'
 const DEFAULT_WIDTH = 600
@@ -43,6 +45,11 @@ export const OutputPayload = InputPayload
 
 export type Output = t.TypeOf<typeof OutputPayload>
 
+const s3 = new S3({
+  signatureVersion: 'v4',
+  region: config.AWS_REGION,
+})
+
 /** Invoked on API Gateway call */
 export const postHandler = (
   event: APIGatewayEvent,
@@ -57,38 +64,16 @@ export const postHandler = (
       ' context ' +
       JSON.stringify(context, null, 2),
   )
-  const payload = event.body !== undefined ? event.body : (event as any)
-  return resize(decode<Input>(InputPayload, payload))
-    .then(result => callback(null, result))
-    .catch(err => {
-      log.warn('Failed to resize image', err)
-      throw toThrow(err, 'Failed to resize image')
-    })
-}
-
-/** Invoked on S3 event */
-export const s3EventHandler = (
-  event: S3Event,
-  context: LambdaContext,
-  callback: LambdaCallback,
-) => {
-  logger.info(
-    'event(' +
-      typeof event +
-      ') ' +
-      JSON.stringify(event, null, 2) +
-      ' context ' +
-      JSON.stringify(context, null, 2),
-  )
-  return Promise.all(
-    event.Records.filter(r => r.s3.object.key.endsWith('.jpg')).map(r =>
-      resize(
-        decode<Input>(InputPayload, {
-          s3Url: 's3://' + r.s3.bucket.name + '/' + r.s3.object.key,
-        }),
-      ),
-    ),
-  ).then(result => callback(null, result))
+  const payload = findPayload(event)
+  try {
+    return resize(decode<Input>(InputPayload, payload))
+      .then(result => apiResponse(event, context, callback).success(result))
+      .catch(failure =>
+        apiResponse(event, context, callback).failure('Failed to resize: ' + failure),
+      )
+  } catch (error) {
+    apiResponse(event, context, callback).failure('Failed to resize: ' + error)
+  }
 }
 
 export const resize = (input: Input): Promise<Output> => {

@@ -27,6 +27,7 @@
     "@types/node": "^11.13.5",
     "@types/ramda": "^0.26.8",
     "@types/sharp": "^0.22.1",
+    "husky": "^2.2.0",
     "mocha": "^6.1.4",
     "nodemon": "^1.18.11",
     "prettier": "^1.17.0",

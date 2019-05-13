@@ -7,11 +7,10 @@ Resizes S3 stored image using NodeJS [sharp](https://github.com/lovell/sharp) li
   * Typescript
   * Unit and e2e tests
   * Configuration
-  * Caches Rekognition responses in S3 along with the object
   * Deployment using [Serverless framework](https://serverless.com)
   * Connect to API Gateway
   * Payload testing using [io-ts](https://github.com/gcanti/io-ts)
-  
+
 ## Settings and private keys management
 
 This project uses chamber CLI tool to manage project settings and private values. 

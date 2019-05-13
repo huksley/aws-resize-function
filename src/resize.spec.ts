@@ -41,6 +41,12 @@ describe('check types', () => {
     const url = config.E2E_IMAGE_URL
     const res = resize({
       s3Url: url,
+      faceRect: {
+        left: 0.2866584062576294,
+        top: 0.266741544008255,
+        width: 0.34404903650283813,
+        height: 0.31156522035598755,
+      },
     })
     return res.then(result => log.info('result', result))
   })

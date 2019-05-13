@@ -32,6 +32,12 @@ export const InputPayload = t.intersection([
     s3Url: t.string,
   }),
   t.partial({
+    faceRect: t.type({
+      top: t.number,
+      left: t.number,
+      width: t.number,
+      height: t.number,
+    }),
     dstS3Url: t.string,
     width: t.number,
     height: t.number,
@@ -77,7 +83,9 @@ export const postHandler = (
 }
 
 export const resize = (input: Input): Promise<Output> => {
-  const format = input.format || DEFAULT_FORMAT
+  const extension = ext(input.s3Url)
+  const format =
+    input.format || (extension != 'jpg' && extension != 'png' ? DEFAULT_FORMAT : extension)
   const width = input.width || DEFAULT_WIDTH
   const height = input.height || DEFAULT_HEIGHT
   const dstS3Url = input.dstS3Url || DEFAULT_DSTS3URL(input.s3Url)
@@ -87,14 +95,31 @@ export const resize = (input: Input): Promise<Output> => {
     .promise()
     .then(data => {
       logger.info(`Got file ${data.Metadata}, ${data.ContentLength} bytes`)
-      return Sharp(data.Body as Buffer) // FIXME: check types
-        .resize(width, height)
-        .toFormat(format)
-        .toBuffer()
-        .catch(err => {
-          log.warn('Failed to resize image', err)
-          throw toThrow(err, 'Failed to resize image')
+      const extract = (sharp: Sharp.Sharp) => {
+        return sharp.metadata().then(meta => {
+          return input.faceRect
+            ? sharp.extract(
+                (r => ({
+                  left: Math.floor(meta!.width! * r.left),
+                  top: Math.floor(meta!.height! * r.top),
+                  width: Math.ceil(meta!.width! * r.width),
+                  height: Math.ceil(meta!.height! * r.height),
+                }))(input.faceRect),
+              )
+            : sharp
         })
+      }
+
+      return extract(Sharp(data.Body as Buffer)).then(sharp =>
+        sharp
+          .resize(width, height)
+          .toFormat(format)
+          .toBuffer()
+          .catch(err => {
+            log.warn('Failed to resize image', err)
+            throw toThrow(err, 'Failed to resize image')
+          }),
+      )
     })
     .catch(err => {
       log.warn('Failed to download image', err)
@@ -108,6 +133,7 @@ export const resize = (input: Input): Promise<Output> => {
           Bucket: urlToBucketName(dstS3Url),
           ContentType: format === 'jpg' ? 'image/jpeg' : 'image/' + format,
           Key: urlToKeyName(dstS3Url),
+          ACL: config.THUMBNAIL_ACL,
         })
         .promise()
         .catch(err => {

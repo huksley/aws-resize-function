@@ -8,7 +8,7 @@ provider:
   # optional, in MB, default is 1024, min is 128
   memorySize: 128
   # optional, in seconds, default is 6
-  timeout: 30
+  timeout: 60
   # optional, default is true
   versionFunctions: false
   iamRoleStatements:

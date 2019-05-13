@@ -91,64 +91,87 @@ export const resize = (input: Input): Promise<Output> => {
   const dstS3Url = input.dstS3Url || DEFAULT_DSTS3URL(input.s3Url)
   logger.info(`Resizing ${input.s3Url} to ${width}x${height}`)
   return s3
-    .getObject({ Bucket: urlToBucketName(input.s3Url), Key: urlToKeyName(input.s3Url) })
+    .listObjectsV2({
+      Bucket: urlToBucketName(dstS3Url),
+      Prefix: urlToKeyName(dstS3Url),
+    })
     .promise()
-    .then(data => {
-      logger.info(`Got file ${data.Metadata}, ${data.ContentLength} bytes`)
-      const extract = (sharp: Sharp.Sharp) => {
-        return sharp.metadata().then(meta => {
-          return input.faceRect
-            ? sharp.extract(
-                (r => ({
-                  left: Math.floor(meta!.width! * r.left),
-                  top: Math.floor(meta!.height! * r.top),
-                  width: Math.ceil(meta!.width! * r.width),
-                  height: Math.ceil(meta!.height! * r.height),
-                }))(input.faceRect),
-              )
-            : sharp
-        })
-      }
+    .then(listResponse => {
+      if (listResponse.KeyCount === 1) {
+        log.info('Thumbnail already exists', listResponse)
+        return {
+          ...input,
+          format,
+          dstS3Url,
+          width,
+          height,
+        }
+      } else {
+        return s3
+          .getObject({ Bucket: urlToBucketName(input.s3Url), Key: urlToKeyName(input.s3Url) })
+          .promise()
+          .then(data => {
+            logger.info(`Got file ${data.Metadata}, ${data.ContentLength} bytes`)
+            const extract = (sharp: Sharp.Sharp) => {
+              return sharp.metadata().then(meta => {
+                return input.faceRect
+                  ? sharp.extract(
+                      (rect => ({
+                        left: Math.floor(meta!.width! * rect.left),
+                        top: Math.floor(meta!.height! * rect.top),
+                        width: Math.ceil(meta!.width! * rect.width),
+                        height: Math.ceil(meta!.height! * rect.height),
+                      }))(input.faceRect),
+                    )
+                  : sharp
+              })
+            }
 
-      return extract(Sharp(data.Body as Buffer)).then(sharp =>
-        sharp
-          .resize(width, height)
-          .toFormat(format)
-          .toBuffer()
+            return extract(Sharp(data.Body as Buffer)).then(sharp =>
+              sharp
+                .resize(width, height)
+                .toFormat(format)
+                .toBuffer()
+                .catch(err => {
+                  log.warn('Failed to resize image', err)
+                  throw toThrow(err, 'Failed to resize image')
+                }),
+            )
+          })
           .catch(err => {
-            log.warn('Failed to resize image', err)
-            throw toThrow(err, 'Failed to resize image')
-          }),
-      )
+            log.warn('Failed to download image', err)
+            throw toThrow(err, 'Failed to download image')
+          })
+          .then(buffer => {
+            logger.info(`Writing resized image to ${dstS3Url}, ${buffer.length} bytes`)
+            return s3
+              .putObject({
+                Body: buffer,
+                Bucket: urlToBucketName(dstS3Url),
+                ContentType: format === 'jpg' ? 'image/jpeg' : 'image/' + format,
+                Key: urlToKeyName(dstS3Url),
+                ACL: config.THUMBNAIL_ACL,
+              })
+              .promise()
+              .catch(err => {
+                log.warn('Failed to save resized image', err)
+                throw toThrow(err, 'Failed to save resized image')
+              })
+              .then(result => {
+                log.info('Saved to file ', result)
+                return {
+                  ...input,
+                  format,
+                  dstS3Url,
+                  width,
+                  height,
+                }
+              })
+          })
+      }
     })
     .catch(err => {
-      log.warn('Failed to download image', err)
-      throw toThrow(err, 'Failed to download image')
-    })
-    .then(buffer => {
-      logger.info(`Writing resized image to ${dstS3Url}, ${buffer.length} bytes`)
-      return s3
-        .putObject({
-          Body: buffer,
-          Bucket: urlToBucketName(dstS3Url),
-          ContentType: format === 'jpg' ? 'image/jpeg' : 'image/' + format,
-          Key: urlToKeyName(dstS3Url),
-          ACL: config.THUMBNAIL_ACL,
-        })
-        .promise()
-        .catch(err => {
-          log.warn('Failed to save resized image', err)
-          throw toThrow(err, 'Failed to save resized image')
-        })
-        .then(result => {
-          log.info('Saved to file ', result)
-          return {
-            ...input,
-            format,
-            dstS3Url,
-            width,
-            height,
-          }
-        })
+      log.warn('Failed to check existing thumbnail', err)
+      throw toThrow(err, 'Failed to check existing thumbnai')
     })
 }

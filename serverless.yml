@@ -6,9 +6,9 @@ provider:
   region: eu-west-1
   stage: dev
   # optional, in MB, default is 1024, min is 128
-  memorySize: 128
+  memorySize: 2048
   # optional, in seconds, default is 6
-  timeout: 60
+  timeout: 30
   # optional, default is true
   versionFunctions: false
   iamRoleStatements:

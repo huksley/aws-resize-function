@@ -97,6 +97,7 @@ export const apiResponse = (
   callback: LambdaCallback,
 ) => {
   const simplePayload = event.body === undefined
+  const httpPayload = !simplePayload // FIXME
 
   // Don`t wrap if it is a simple payload, return only body
   // It is used when we have AWS Lambda direct invocation
@@ -107,7 +108,9 @@ export const apiResponse = (
             response.statusCode
           }`,
         )
-        return callback(null, JSON.parse(response.body))
+        return !httpPayload && response.statusCode >= 400
+          ? callback(response.body, null)
+          : callback(null, JSON.parse(response.body))
       }
     : (_, response) => {
         log.warn(
@@ -115,7 +118,9 @@ export const apiResponse = (
             response.statusCode
           }`,
         )
-        return callback(null, response)
+        return !httpPayload && response.statusCode >= 400
+          ? callback(response, null)
+          : callback(null, response)
       }
 
   return {

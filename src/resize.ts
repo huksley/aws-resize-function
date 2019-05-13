@@ -117,10 +117,10 @@ export const resize = (input: Input): Promise<Output> => {
                 return input.faceRect
                   ? sharp.extract(
                       (rect => ({
-                        left: Math.floor(meta!.width! * rect.left),
-                        top: Math.floor(meta!.height! * rect.top),
-                        width: Math.ceil(meta!.width! * rect.width),
-                        height: Math.ceil(meta!.height! * rect.height),
+                        left: Math.max(0, Math.floor(meta!.width! * rect.left)),
+                        top: Math.max(0, Math.floor(meta!.height! * rect.top)),
+                        width: Math.min(meta!.width!, Math.ceil(meta!.width! * rect.width)),
+                        height: Math.min(meta!.height!, Math.ceil(meta!.height! * rect.height)),
                       }))(input.faceRect),
                     )
                   : sharp

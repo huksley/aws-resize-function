@@ -85,7 +85,7 @@ export const postHandler = (
 export const resize = (input: Input): Promise<Output> => {
   const extension = ext(input.s3Url)
   const format =
-    input.format || (extension != 'jpg' && extension != 'png' ? DEFAULT_FORMAT : extension)
+    input.format || (extension !== 'jpg' && extension !== 'png' ? DEFAULT_FORMAT : extension)
   const width = input.width || DEFAULT_WIDTH
   const height = input.height || DEFAULT_HEIGHT
   const dstS3Url = input.dstS3Url || DEFAULT_DSTS3URL(input.s3Url)

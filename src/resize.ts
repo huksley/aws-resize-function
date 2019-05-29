@@ -27,17 +27,21 @@ const DEFAULT_DSTS3URL = (s3Url: string) =>
   '.' +
   ext(urlToKeyName(s3Url))
 
+export const RectPayload = t.type({
+  top: t.number,
+  left: t.number,
+  width: t.number,
+  height: t.number,
+})
+
+export type Rect = t.TypeOf<typeof RectPayload>
+
 export const InputPayload = t.intersection([
   t.type({
     s3Url: t.string,
   }),
   t.partial({
-    faceRect: t.type({
-      top: t.number,
-      left: t.number,
-      width: t.number,
-      height: t.number,
-    }),
+    faceRect: RectPayload,
     dstS3Url: t.string,
     width: t.number,
     height: t.number,
@@ -89,6 +93,38 @@ export const resize = (input: Input): Promise<Output> => {
   const width = input.width || DEFAULT_WIDTH
   const height = input.height || DEFAULT_HEIGHT
   const dstS3Url = input.dstS3Url || DEFAULT_DSTS3URL(input.s3Url)
+
+  // Convert relative coordinates 0...1 rectangle (1 - 100% of width/height)
+  // to pixel related
+  const convertRelativeRect = (meta: Sharp.Metadata, rect: Rect): Rect => {
+    const result = {
+      left: Math.max(0, Math.floor(meta.width! * rect.left)),
+      top: Math.max(0, Math.floor(meta.height! * rect.top)),
+      width: Math.min(meta.width!, Math.ceil(meta.width! * rect.width)),
+      height: Math.min(meta.height!, Math.ceil(meta.height! * rect.height)),
+    }
+
+    logger.info(`Converted incoming rect according to the image metadata`, {
+      rect,
+      result,
+      meta,
+    })
+    return result
+  }
+
+  // Produce larger rectangle by the following factor (1 - no change, 2 - twice as large)
+  const zoomOut = (meta: Sharp.Metadata, rect: Rect, factor: number = 2): Rect => {
+    const w = rect.width * factor
+    const h = rect.height * factor
+    const result = {
+      left: Math.max(0, rect.left - w / 2),
+      top: Math.max(0, rect.top - h / 2),
+      width: Math.min(meta.width!, h),
+      height: Math.min(meta.height!, h),
+    }
+    return result
+  }
+
   logger.info(`Resizing ${input.s3Url} to ${width}x${height}`)
   return s3
     .listObjectsV2({
@@ -113,18 +149,20 @@ export const resize = (input: Input): Promise<Output> => {
           .then(data => {
             logger.info(`Got file ${data.Metadata}, ${data.ContentLength} bytes`)
             const extract = (sharp: Sharp.Sharp) => {
-              return sharp.metadata().then(meta => {
-                return input.faceRect
-                  ? sharp.extract(
-                      (rect => ({
-                        left: Math.max(0, Math.floor(meta!.width! * rect.left)),
-                        top: Math.max(0, Math.floor(meta!.height! * rect.top)),
-                        width: Math.min(meta!.width!, Math.ceil(meta!.width! * rect.width)),
-                        height: Math.min(meta!.height!, Math.ceil(meta!.height! * rect.height)),
-                      }))(input.faceRect),
-                    )
-                  : sharp
-              })
+              return input.faceRect
+                ? sharp
+                    .metadata()
+                    .then(meta => {
+                      logger.info('Extracting face', input.faceRect)
+                      return sharp.extract(
+                        zoomOut(meta!, convertRelativeRect(meta!, input.faceRect!)),
+                      )
+                    })
+                    .catch(err => {
+                      log.warn('Failed to extract image metadata', err)
+                      throw toThrow(err, 'Failed to extract image metadata')
+                    })
+                : Promise.resolve(sharp)
             }
 
             return extract(Sharp(data.Body as Buffer)).then(sharp =>

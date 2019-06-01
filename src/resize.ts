@@ -14,6 +14,7 @@ import {
 import { Context as LambdaContext, APIGatewayEvent, Callback as LambdaCallback } from 'aws-lambda'
 import { logger as log, logger } from './logger'
 import { config } from './config'
+import * as R from 'ramda'
 
 const DEFAULT_FORMAT = 'png'
 const DEFAULT_WIDTH = 600
@@ -107,7 +108,7 @@ export const resize = (input: Input): Promise<Output> => {
     logger.info(`Converted incoming rect according to the image metadata`, {
       rect,
       result,
-      meta,
+      meta: R.pickAll(['width', 'height', 'top', 'left'], meta),
     })
     return result
   }
@@ -116,12 +117,19 @@ export const resize = (input: Input): Promise<Output> => {
   const zoomOut = (meta: Sharp.Metadata, rect: Rect, factor: number = 2): Rect => {
     const w = rect.width * factor
     const h = rect.height * factor
+    const extraw = rect.width * (factor - 1)
+    const extrah = rect.height * (factor - 1)
     const result = {
-      left: Math.max(0, rect.left - w / 2),
-      top: Math.max(0, rect.top - h / 2),
-      width: Math.min(meta.width!, h),
-      height: Math.min(meta.height!, h),
+      left: Math.max(0, Math.round(rect.left - extraw / 2)),
+      top: Math.max(0, Math.round(rect.top - extrah / 2)),
+      width: Math.min(meta.width!, Math.round(w)),
+      height: Math.min(meta.height!, Math.round(h)),
     }
+    logger.info('Zoom out', {
+      rect,
+      result,
+      factor,
+    })
     return result
   }
 

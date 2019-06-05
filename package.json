@@ -30,7 +30,7 @@
     "husky": "^2.2.0",
     "mocha": "^6.1.4",
     "nodemon": "^1.19.1",
-    "prettier": "^1.17.0",
+    "prettier": "^1.17.1",
     "pretty-quick": "^1.10.0",
     "serverless": "^1.44.1",
     "serverless-plugin-existing-s3": "^2.4.0",

@@ -74,7 +74,7 @@ You can also invoke Lambda via AWS SDK API, cli or serverless
 
 ### Invoking API gateway endpoint
 
-After serverless deploys lambda, make notice of API URL:
+After serverless deploys lambda, record API URL endpoint:
 
 ```
 Serverless: Compiling with Typescript...
@@ -104,10 +104,10 @@ functions:
 
 ```
 
-after that, invoke Lambda passing payload
+after that, invoke Lambda passing payload, using specified endpoint
 
 ```
-curl -XPOST -d "{ \"s3Url\": \"s3://my-image-bucket/image.jpg\" } https://<api-id-here>.execute-api.eu-west-1.amazonaws.com/dev/api/resize"
+curl -XPOST -d "{ \"s3Url\": \"s3://my-image-bucket/image.jpg\" }" "https://<api-id-here>.execute-api.eu-west-1.amazonaws.com/dev/api/resize"
 ```
 
 ### Invoke by placing file to S3 bucket

@@ -4,6 +4,8 @@
 
 Resizes S3 stored image using NodeJS [sharp](https://github.com/lovell/sharp) library
 
+![Integration](./integration.png)
+
   * Typescript
   * Unit and e2e tests
   * Configuration

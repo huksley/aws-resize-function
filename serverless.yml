@@ -14,7 +14,7 @@ provider:
   iamRoleStatements:
     - Effect: "Allow"
       Action:
-        - "s3:*"
+        - "s3:ListBucket"
       Resource:
         Fn::Join:
           - ""
@@ -22,7 +22,9 @@ provider:
             - ${env:IMAGE_BUCKET, 'sample-bucket'}
     - Effect: "Allow"
       Action:
-        - "s3:*"
+        - "s3:PutObject"
+        - "s3:PutObjectAcl"
+        - "s3:GetObject"
       Resource:
         Fn::Join:
           - ""
@@ -32,6 +34,7 @@ provider:
 
 plugins:
   - serverless-plugin-typescript
+  - serverless-plugin-existing-s3
 
 package:
   exclude:
@@ -47,3 +50,20 @@ functions:
           path: api/resize
           method: post
           cors: true
+  handleExistingS3:
+    handler: src/resize.s3Handler
+    events:
+      - existingS3:
+          bucket: ${env:IMAGE_BUCKET, 'sample-bucket'}
+          events:
+            - s3:ObjectCreated:*
+          rules:
+            - prefix: profile-image/
+            - suffix: .jpg
+      - existingS3:
+          bucket: ${env:IMAGE_BUCKET, 'sample-bucket'}
+          events:
+            - s3:ObjectCreated:*
+          rules:
+            - prefix: profile-image/
+            - suffix: .png

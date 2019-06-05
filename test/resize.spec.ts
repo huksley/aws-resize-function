@@ -1,8 +1,8 @@
 import * as assert from 'assert'
-import { Input, InputPayload, resize } from './resize'
-import { decode } from './util'
-import { config } from './config'
-import { logger as log } from './logger'
+import { Input, InputPayload, resize } from '../src/resize'
+import { decode } from '../src/util'
+import { config } from '../src/config'
+import { logger as log } from '../src/logger'
 
 describe('check types', () => {
   it('input payload parseable', () => {
@@ -47,6 +47,22 @@ describe('check types', () => {
         width: 0.34404903650283813,
         height: 0.31156522035598755,
       },
+    })
+    return res.then(result => log.info('result', result))
+  })
+
+  e2e('can resize sample without cache', async function() {
+    this.timeout(10000)
+    const url = config.E2E_IMAGE_URL
+    const res = resize({
+      s3Url: url,
+      faceRect: {
+        left: 0.2866584062576294,
+        top: 0.266741544008255,
+        width: 0.34404903650283813,
+        height: 0.31156522035598755,
+      },
+      checkExists: false,
     })
     return res.then(result => log.info('result', result))
   })

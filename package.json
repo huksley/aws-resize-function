@@ -1,7 +1,7 @@
 {
   "name": "aws-resize",
-  "description": "My project",
-  "version": "0.1.0",
+  "description": "AWS Lambda to resize images",
+  "version": "1.0.0",
   "main": "src/resize.ts",
   "license": "MIT",
   "engines": {
@@ -33,6 +33,7 @@
     "prettier": "^1.17.0",
     "pretty-quick": "^1.10.0",
     "serverless": "^1.41.1",
+    "serverless-plugin-existing-s3": "^2.4.0",
     "serverless-plugin-typescript": "^1.1.7",
     "shx": "^0.3.2",
     "ts-node": "^8.1.0",
@@ -42,14 +43,14 @@
   },
   "scripts": {
     "clean": "shx rm -Rf build node_modules",
-    "dev": "cross-env NODE_ENV=development nodemon -r ts-node/register src/index.ts",
-    "start": "cross-env NODE_ENV=production node ./build/index.js",
     "build": "tsc -p .",
     "format": "prettier \"src/**/*.{js,ts,tsx}\" --write",
     "lint": "ts-node node_modules/.bin/tslint -p . -t verbose",
-    "test": "chamber exec find-face/test1 -- mocha -r ts-node/register --extension ts \"src/**/*.spec.ts\"",
-    "deploy": "chamber exec find-face/test1 -- serverless deploy",
-    "serverless": "chamber exec find-face/test1 -- serverless"
+    "test": "chamber exec ${PROJECT} -- mocha",
+    "apideploy": "chamber exec ${PROJECT} -- serverless deploy",
+    "s3deploy": "chamber exec ${PROJECT} -- serverless s3deploy",
+    "deploy": "yarn run -s apideploy && yarn run -s s3deploy",
+    "serverless": "chamber exec ${PROJECT} -- serverless"
   },
   "prettier": {
     "semi": false,
@@ -61,7 +62,7 @@
   "husky": {
     "hooks": {
       "pre-commit": "pretty-quick --staged --pattern \"**/*.*(js|jsx|ts|tsx)\"",
-      "pre-push": "yarn lint && yarn run -s build && yarn test"
+      "pre-push": "yarn run -s lint && yarn run -s build && yarn test"
     }
   }
 }

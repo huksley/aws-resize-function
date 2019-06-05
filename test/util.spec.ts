@@ -1,4 +1,4 @@
-import { urlToBucketName, urlToKeyName } from './util'
+import { urlToBucketName, urlToKeyName } from '../src/util'
 import * as assert from 'assert'
 
 describe('util.ts', () => {

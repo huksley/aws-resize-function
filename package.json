@@ -18,7 +18,7 @@
     "ramda": "^0.26.1",
     "sharp": "^0.22.1",
     "source-map-support": "^0.5.12",
-    "winston": "^2"
+    "winston": "^3"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.26",

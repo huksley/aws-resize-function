@@ -5,7 +5,7 @@
   "main": "src/resize.ts",
   "license": "MIT",
   "engines": {
-    "node": ">=8.9.0 <11.0.0",
+    "node": ">=8.9.0 <12.12.0",
     "yarn": ">=1.12.3"
   },
   "dependencies": {
@@ -46,11 +46,11 @@
     "build": "tsc -p .",
     "format": "prettier \"src/**/*.{js,ts,tsx}\" --write",
     "lint": "ts-node node_modules/.bin/tslint -p . -t verbose",
-    "test": "chamber exec ${PROJECT} -- mocha",
-    "apideploy": "chamber exec ${PROJECT} -- serverless deploy",
-    "s3deploy": "chamber exec ${PROJECT} -- serverless s3deploy",
+    "test": "chamber exec find-face/test1 -- mocha",
+    "apideploy": "chamber exec find-face/test1 -- serverless deploy",
+    "s3deploy": "chamber exec find-face/test1 -- serverless s3deploy",
     "deploy": "yarn run -s apideploy && yarn run -s s3deploy",
-    "serverless": "chamber exec ${PROJECT} -- serverless"
+    "serverless": "chamber exec find-face/test1  -- serverless"
   },
   "prettier": {
     "semi": false,

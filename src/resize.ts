@@ -129,21 +129,23 @@ export const s3Handler = async (
     logger.info('Got event', payload)
     const s3Event = payload as AWSLambda.S3Event
     if (s3Event.Records) {
-      const processed = (await Promise.all(
-        s3Event.Records.map(s3Record => {
-          const fileName = s3Record.s3.object.key
-          if (fileName.endsWith('.json')) {
-            logger.info('Skipping JSON file', s3Record)
-            return Promise.resolve(null)
-          } else if (fileName.indexOf('-thumbnail') > 0) {
-            logger.info('Skipping thumbnail file', s3Record)
-            return Promise.resolve(null)
-          } else {
-            const s3Url = 's3://' + s3Record.s3.bucket.name + '/' + fileName
-            return resize({ s3Url })
-          }
-        }),
-      )).filter(v => v !== null)
+      const processed = (
+        await Promise.all(
+          s3Event.Records.map(s3Record => {
+            const fileName = s3Record.s3.object.key
+            if (fileName.endsWith('.json')) {
+              logger.info('Skipping JSON file', s3Record)
+              return Promise.resolve(null)
+            } else if (fileName.indexOf('-thumbnail') > 0) {
+              logger.info('Skipping thumbnail file', s3Record)
+              return Promise.resolve(null)
+            } else {
+              const s3Url = 's3://' + s3Record.s3.bucket.name + '/' + fileName
+              return resize({ s3Url })
+            }
+          }),
+        )
+      ).filter(v => v !== null)
       apiResponse(event, context, callback).success({ processed: processed.length })
     } else {
       logger.warn('No event records')
@@ -252,9 +254,11 @@ export const resize = (input: Input): Promise<Output> => {
                 .metadata()
                 .then(meta => {
                   logger.info('Extracting face', input.faceRect)
-                  return sharp.extract(
-                    zoomOutRect(meta!, convertRelativeRect(meta!, input.faceRect!), zoomOut),
-                  )
+                  return sharp
+                    .rotate()
+                    .extract(
+                      zoomOutRect(meta!, convertRelativeRect(meta!, input.faceRect!), zoomOut),
+                    )
                 })
                 .catch(err => {
                   log.warn('Failed to extract image metadata', err)

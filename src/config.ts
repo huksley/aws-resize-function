@@ -18,8 +18,9 @@ type defaultConfigKey = keyof typeof defaultConfig
 
 /** Converts specific keys to boolean */
 const toBoolean = (o: typeof defaultConfig, k: defaultConfigKey[]): typeof defaultConfig => {
+  const oo = o as any
   for (const kk of k) {
-    o[kk] = typeof o[kk] === 'string' ? Boolean(o[kk]) : o[kk]
+    oo[kk] = typeof o[kk] === 'string' ? Boolean(o[kk]) : o[kk]
   }
   return o
 }
